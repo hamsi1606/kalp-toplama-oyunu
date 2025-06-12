@@ -1,0 +1,38 @@
+server.js const express = require('express');
+const app = express();
+const http = require('http').createServer(app);
+const io = require('socket.io')(http, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
+const PORT = process.env.PORT || 3000;
+
+app.use(express.static('public'));
+
+io.on('connection', (socket) => {
+  console.log('Yeni oyuncu bağlandı:', socket.id);
+
+  socket.on('joinRoom', (room) => {
+    socket.join(room);
+    console.log(socket.id, 'oda katıldı:', room);
+  });
+
+  socket.on('kollect', (data) => {
+    socket.to(data.room).emit('kollected', data);
+    io.to(data.room).emit('updateScore', data);
+  });
+
+  socket.on('startGame', (room) => {
+    io.to(room).emit('gameStart');
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Oyuncu ayrıldı:', socket.id);
+  });
+});
+
+http.listen(PORT, () => {
+  console.log(`Sunucu ${PORT} portunda çalışıyor`);
+});
